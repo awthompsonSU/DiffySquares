@@ -1,0 +1,39 @@
+var count = 1;
+var sides = [];
+
+onEvent("button1", "click", function( ) {
+  var numbers = getText("text_input1");
+  count = 1;
+  sides = numbers.match(/\d+/g);
+  var output = "Original Square: ";
+  for(var i = 0; i<4; i++)
+  {
+    output += sides[i] + " ";
+  }
+  setText("text_area1",output);
+  
+  var zeroCount = 0;
+  while(zeroCount!= 4)
+  {
+    var newSides=[];
+    count++;
+    zeroCount=0;
+    output+="\nSquare #"+count+"\n";
+    for(var i = 0; i<4; i++)
+    {
+      if(i!=3)
+      newSides[i] = Math.abs(sides[i+1]-sides[i]);
+      else
+      newSides[i] = Math.abs(sides[0]-sides[3]);
+      output+=newSides[i]+" ";
+      if(newSides[i]==0)
+        zeroCount++;
+    }
+    sides = newSides;
+    setText("text_area1",output);
+  }
+  
+  output+="\nYou made "+count+" squares.";
+  setText("text_area1",output);
+
+});
