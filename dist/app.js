@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 const M = DiffyMath;
 const fields = ['a','b','c','d'].map(c => $('corner-' + c));
 let rows = [], scale = 0, step = 0, complete = true, timer = null;
-let practice = false, unlocked = 0;
+let practice = $('practice-mode').checked, unlocked = 0;
 const RECENT_KEY = 'diffy-squares.recent.v1';
 let storageAvailable = true;
 let recentRuns = loadRecentRuns();
@@ -124,7 +124,7 @@ function render() {
   $('calculation-panel').hidden = practice;
   $('play').hidden = $('finish').hidden = $('speed').parentElement.hidden = practice;
   $('download').disabled = practice;
-  $('download').title = practice ? 'Switch to Watch the pattern to download the full sequence.' : '';
+  $('download').title = practice ? 'Switch to Automatic mode to download the full sequence.' : '';
   $('step-range').max = practice ? unlocked : rows.length - 1;
   practiceInputs();
   const last = step === rows.length - 1;
@@ -153,7 +153,7 @@ function buildHistory() {
     [...row, row.reduce((a,b) => a > b ? a : b)].forEach(n => {const td = document.createElement('td'); td.textContent = f(n); tr.append(td);});
     body.append(tr);
   });
-  $('history-note').textContent = practice ? 'Practice mode shows only the starting square and squares you have earned with correct answers. The timeline revisits those squares. Full CSV export is available in Watch the pattern.' : `${rows.length} ${rows.length === 1 ? 'square' : 'squares'} · ${rows.length - 1} steps${complete ? ' to four zeros' : ' (display limit reached)'}. Square 1 is the starting square; each step creates one new square.`;
+  $('history-note').textContent = practice ? 'Practice mode shows only the starting square and squares you have earned with correct answers. The timeline revisits those squares. Full CSV export is available in Automatic mode.' : `${rows.length} ${rows.length === 1 ? 'square' : 'squares'} · ${rows.length - 1} steps${complete ? ' to four zeros' : ' (display limit reached)'}. Square 1 is the starting square; each step creates one new square.`;
 }
 function calculations() {
   const target = $('calculations'); target.replaceChildren();
@@ -232,29 +232,36 @@ $('download').onclick=()=>{
 };
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
 const ideas = [
-  {title:'Change just one corner', prompt:'Start with 1, 5, 10, 20. Increase only the first number by 1, then try again. Which first-step differences change? Does the total square count change?', challenge:'Predict before calculating. Test three more changes and explain the affected edges.', source:'Number Squares', url:'https://nrich.maths.org/problems/number-squares'},
-  {title:'Work backward from a target', prompt:'Can you choose four starting numbers whose first differences are 3, 3, 3, 3? Find two different starting squares that work.', challenge:'Then try the target 1, 1, 1, 2. Is it possible? Explain your reasoning.', source:'Number Squares', url:'https://nrich.maths.org/problems/number-squares'},
-  {title:'Shift every number', prompt:'Compare 1, 5, 10, 20 with 11, 15, 20, 30. What stays the same after the first step? Try adding a negative number to every corner.', challenge:'Use the subtraction rule to explain your observations.', source:'Number Squares', url:'https://nrich.maths.org/problems/number-squares'},
-  {title:'Scale the starting square', prompt:'Compare 1, 5, 10, 20 with 2, 10, 20, 40 and 0.1, 0.5, 1, 2. Track both the values and the number of squares.', challenge:'What do you predict for any positive scale factor?', source:'Number Squares', url:'https://nrich.maths.org/problems/number-squares'},
-  {title:'Find the shortest journeys', prompt:'Compare four equal numbers, alternating values such as 2, 7, 2, 7, and two matching pairs such as 2, 2, 7, 7.', challenge:'Predict the number of steps for each pattern. Remember to count the starting square separately.', source:'Differs', url:'https://nrich.maths.org/problems/differs'},
-  {title:'Same numbers, different order', prompt:'Arrange 1, 5, 10, 20 in different orders. Compare rotating the order, reversing it, and swapping only two corners.', challenge:'Which rearrangements preserve the square count? Use the edge differences to explain.', source:'Differs', url:'https://nrich.maths.org/problems/differs'},
-  {title:'Chase a longer journey', prompt:'Choose integers from 0 to 20. Can you beat your previous square count? Use the recent-starting-sets dropdown to compare your attempts.', challenge:'Work systematically, changing one corner at a time. Make a conjecture about patterns that last longer.', source:'Differs', url:'https://nrich.maths.org/problems/differs'},
-  {title:'Track odd and even', prompt:'Use integer starting values. Mark each corner odd or even at every step. What can you say about the four differences after four steps?', challenge:'Try several starting patterns, then explain using the parity of a difference.', source:'Differs', url:'https://nrich.maths.org/problems/differs'}
+  {title:'One, two, three, four', prompt:'A simple set of small numbers to get you started.', values:['1','2','3','4']},
+  {title:'Four small primes', prompt:'Start with four familiar prime numbers.', values:['2','3','5','7']},
+  {title:'All the same', prompt:'Try putting the same number at every corner.', values:['7','7','7','7']},
+  {title:'An alternating pair', prompt:'Use two numbers that alternate around the square.', values:['2','7','2','7']},
+  {title:'Start with zero', prompt:'A zero and three increasing numbers make another starting point.', values:['0','1','2','4']},
+  {title:'A mix of signs', prompt:'Ready for negative numbers? Try this mix of positives and negatives.', values:['-3','5','-8','2']},
+  {title:'A decimal starting set', prompt:'Try tenths alongside whole numbers.', values:['0.1','0.5','1','2']},
+  {title:'A longer journey', prompt:'For a longer sequence, try these bigger starting numbers. Automatic mode can help you follow along.', values:['0','653','1854','4063']}
 ];
 let ideaIndex = 0;
 function renderIdea() {
   const idea = ideas[ideaIndex];
-  $('idea-position').textContent = `Idea ${ideaIndex + 1} of ${ideas.length}`;
+  $('idea-position').textContent = `Set ${ideaIndex + 1} of ${ideas.length}`;
   $('idea-title').textContent = idea.title;
   $('idea-prompt').textContent = idea.prompt;
-  $('idea-challenge').textContent = idea.challenge;
-  const source = $('idea-source'); source.replaceChildren();
-  source.append(document.createTextNode('Prompt adapted for this app. Related classroom investigation: '));
-  const link = document.createElement('a'); link.href = idea.url; link.textContent = `NRICH · ${idea.source}`;
-  source.append(link);
+  const values = $('idea-values'); values.replaceChildren();
+  idea.values.forEach((number, i) => {
+    const card = document.createElement('div');
+    const label = document.createElement('span'); label.textContent = 'ABCD'[i];
+    const value = document.createElement('strong'); value.textContent = number;
+    card.append(label, value); values.append(card);
+  });
   $('idea-back').disabled = ideaIndex === 0;
   $('idea-next').disabled = ideaIndex === ideas.length - 1;
 }
+$('idea-use').onclick = () => {
+  ideas[ideaIndex].values.forEach((number, i) => fields[i].value = number);
+  create();
+  $('graph-title').focus();
+};
 $('idea-back').onclick = () => {if (ideaIndex > 0) {ideaIndex--; renderIdea();}};
 $('idea-next').onclick = () => {if (ideaIndex < ideas.length - 1) {ideaIndex++; renderIdea();}};
 

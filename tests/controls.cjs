@@ -15,6 +15,10 @@ w.eval(fs.readFileSync(path.join(root,'app.js'),'utf8'));
 const $=id=>doc.getElementById(id), click=id=>$(id).click();
 const cells=()=>[...doc.querySelectorAll('#history tr.selected td')].slice(0,4).map(td=>td.textContent);
 function values(a){['a','b','c','d'].forEach((c,i)=>$('corner-'+c).value=a[i]); $('corner-form').dispatchEvent(new w.Event('submit',{cancelable:true}));}
+assert($('practice-mode').checked);assert(!$('practice-form').hidden);
+assert(doc.querySelector('.mode-picker label').textContent.includes('Option 1 · Manual'));
+assert(doc.querySelectorAll('.mode-picker label')[1].textContent.includes('Option 2 · Automatic'));
+click('watch-mode');
 assert.deepEqual(cells(),['1','5','10','20']);
 assert($('back').disabled);assert($('restart').disabled);
 click('next');assert.deepEqual(cells(),['4','5','10','19']);
@@ -78,11 +82,15 @@ values(['0','0','0','0']);assert($('practice-form').hidden);assert($('status').t
 // Extreme valid corners may produce more digits than one input; answers still validate exactly.
 const huge='9'.repeat(100), double=(BigInt(huge)*2n).toString();
 values(['-'+huge,huge,'-'+huge,huge]);answers([double,double,double,double]);click('next');assert.equal($('step-range').value,'1');
-// Investigations can be browsed both ways, have sources, and stop at the ends.
+// Starting sets can be browsed in both directions and loaded in either mode.
 assert($('idea-back').disabled);const firstTitle=$('idea-title').textContent;
-for(let i=0;i<7;i++)click('idea-next');assert.equal($('idea-position').textContent,'Idea 8 of 8');assert($('idea-next').disabled);
-assert($('idea-source').querySelector('a').href.startsWith('https://nrich.maths.org/'));
-for(let i=0;i<7;i++)click('idea-back');assert.equal($('idea-title').textContent,firstTitle);assert($('idea-back').disabled);
+for(let i=0;i<7;i++)click('idea-next');assert.equal($('idea-position').textContent,'Set 8 of 8');assert($('idea-next').disabled);
+assert.deepEqual([...doc.querySelectorAll('#idea-values strong')].map(e=>e.textContent),['0','653','1854','4063']);
+click('idea-use');assert($('practice-mode').checked);assert.equal($('step-range').value,'0');
+assert.deepEqual(cells(),['0','653','1854','4063']);assert(!$('practice-form').hidden);
+assert.equal(doc.activeElement.id,'graph-title');
+click('watch-mode');click('idea-use');assert.equal(doc.querySelectorAll('#history tr').length,24);
+for(let i=0;i<7;i++)click('idea-back');assert.equal($('idea-title').textContent,firstTitle);assert($('idea-back').disabled);click('idea-use');assert.deepEqual(cells(),['1','2','3','4']);
 // Saved history reloads with counts recomputed, and malformed entries cannot break startup.
 function reload(savedValue, deny=false){
  const d=new JSDOM(html,{runScripts:'outside-only',url:'https://diffy.test/'}), v=d.window;
@@ -94,4 +102,4 @@ const restored=reload(JSON.stringify(saved));assert.equal(restored.window.docume
 assert.equal(reload('{broken').window.document.getElementById('recent-runs').options.length,1);
 assert.equal(reload(JSON.stringify([{values:['<script>','1','2','3'],squares:5}])).window.document.getElementById('recent-runs').options.length,1);
 const denied=reload(undefined,true);assert(denied.window.document.getElementById('recent-help').textContent.includes('unavailable'));
-console.log('Interface checks passed: playback, validation, exact values, 10-entry history/persistence, practice gating, hidden answers, investigations, and storage fallback.');
+console.log('Interface checks passed: playback, validation, exact values, 10-entry history/persistence, practice gating, hidden answers, starting suggestions, and storage fallback.');
