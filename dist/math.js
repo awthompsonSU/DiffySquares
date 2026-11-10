@@ -1,13 +1,13 @@
 /* Exact fixed-point decimal arithmetic. No binary floating-point rounding. */
 (function(root) {
   'use strict';
-  function parse(values) {
+  function parse(values, maxDigits = 100) {
     const parts = values.map(value => {
       const text = String(value).trim();
       if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text)) throw new Error('Enter a number at every corner, using ordinary decimal notation (for example −3 or 0.25).');
       const clean = text.replace(/^[+-]/, '');
       const [whole, fraction = ''] = clean.split('.');
-      if (whole.length + fraction.length > 100 || fraction.length > 30) throw new Error('Use at most 100 digits per number and at most 30 decimal places.');
+      if (whole.length + fraction.length > maxDigits || fraction.length > 30) throw new Error(`Use at most ${maxDigits} digits per number and at most 30 decimal places.`);
       return { negative: text[0] === '-', whole: whole || '0', fraction };
     });
     const scale = Math.max(...parts.map(p => p.fraction.length));
